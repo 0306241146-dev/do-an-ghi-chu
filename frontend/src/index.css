@@ -1,0 +1,55 @@
+/* =========================================================
+   1. ĐỊNH NGHĨA BIẾN MÀU & THIẾT LẬP CƠ BẢN
+   ========================================================= */
+:root {
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-light: #e2e8f0;
+  --primary-purple: #6366f1;
+  --primary-hover: #4f46e5;
+  --danger-red: #e11d48;
+  --danger-light: #fff1f2;
+  --success-color: #10b981;
+  --radius-lg: 16px;
+  --radius-md: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  --transition: all 0.2s ease-in-out;
+}
+
+[data-theme='dark'] {
+  --bg-main: #0f172a;
+  --bg-surface: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-light: #334155;
+  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Xóa dấu chấm đầu dòng mặc định của danh sách */
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+button, input, textarea {
+  font-family: inherit;
+}
