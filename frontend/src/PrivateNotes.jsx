@@ -3,23 +3,30 @@ import PrivateVaultLock from './PrivateVaultLock';
 import { Lock, KeyRound, Eye, EyeOff, Edit3, Trash2, Copy, Bold, Italic, List, Link as LinkIcon, Code, ChevronUp, ChevronDown, ShieldAlert, Key, Wallet, ShieldCheck, Layers } from 'lucide-react';
 
 function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuery = '', showToast, selectedPrivateNoteToJump }) {
-  const [notes, setNotes] = useState([]);
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [formCategory, setFormCategory] = useState('Tài khoản');
+  //  State quản lý dữ liệu
+  const [notes, setNotes] = useState([]); // Lưu trữ danh sách các ghi chú bảo mật
+  const [editingNoteId, setEditingNoteId] = useState(null); // ID của ghi chú đang được chỉnh sửa (nếu có)
+  
+  //  State form soạn thảo
+  const [formCategory, setFormCategory] = useState('Tài khoản'); // Danh mục mặc định
   const [formTitle, setFormTitle] = useState('');
   const [formContent, setFormContent] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('Tất cả');
   
-  const [visibleContentMap, setVisibleContentMap] = useState({});
-  const [highlightedNoteId, setHighlightedNoteId] = useState(null);
+  //  State giao diện và lọc
+  const [selectedFilter, setSelectedFilter] = useState('Tất cả'); // Trạng thái lọc ghi chú theo danh mục
+  const [visibleContentMap, setVisibleContentMap] = useState({}); // Lưu trạng thái Ẩn/Hiện (••••) cho từng ghi chú riêng biệt
+  const [highlightedNoteId, setHighlightedNoteId] = useState(null); // ID ghi chú được highlight khi click từ tìm kiếm
+  const [expandedNoteId, setExpandedNoteId] = useState(null); // ID ghi chú đang được mở rộng (xem thêm)
+
+  //  State trình soạn thảo
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [showListMenu, setShowListMenu] = useState(false);
-  
-  const [expandedNoteId, setExpandedNoteId] = useState(null);
 
   const editorRef = useRef(null);
 
+  //  KẾT NỐI API 
+  // Lấy danh sách ghi chú riêng tư từ server
   const fetchPrivateNotes = () => {
     fetch('http://localhost:5000/api/private-notes')
       .then((res) => res.json())
@@ -29,10 +36,12 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
       .catch((err) => console.error('Lỗi tải ghi chú kín:', err));
   };
 
+  // Chỉ gọi API lấy dữ liệu khi Vault đã được mở khóa
   useEffect(() => {
     if (isUnlocked) fetchPrivateNotes();
   }, [isUnlocked]);
 
+  // Xử lý cuộn trang đến ghi chú được chọn từ ô tìm kiếm
   useEffect(() => {
     if (selectedPrivateNoteToJump) {
       setHighlightedNoteId(selectedPrivateNoteToJump);
@@ -43,6 +52,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     }
   }, [notes, selectedPrivateNoteToJump]);
 
+  //  Xử lý trình soạn thảo
   const checkActiveStates = () => {
     try {
       setIsBoldActive(document.queryCommandState('bold'));
@@ -70,6 +80,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     }
   };
 
+  // Các hàm định dạng văn bản (In đậm, In nghiêng, Link, Code)
   const applyFormat = (command) => {
     if (!editorRef.current) return;
     if (document.activeElement !== editorRef.current) editorRef.current.focus();
@@ -89,6 +100,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
         } else document.execCommand(command, false, null);
         break;
       case 'link': {
+        // ... (Logic xử lý thêm/xóa thẻ <a>)
         if (!selection || selection.rangeCount === 0) return;
         const anchorNode = selection.anchorNode;
         const parentLink = anchorNode ? (anchorNode.nodeType === 3 ? anchorNode.parentNode : anchorNode).closest('a') : null;
@@ -111,6 +123,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
         break;
       }
       case 'code': {
+        // ... (Logic chèn thẻ <code>)
         if (!selection || selection.rangeCount === 0) return;
         const range = selection.getRangeAt(0);
         const containerNode = range.commonAncestorContainer;
@@ -133,6 +146,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
   };
 
   const applyListFormat = (type) => {
+    // ... (Logic định dạng danh sách)
     if (!editorRef.current) return;
     if (document.activeElement !== editorRef.current) editorRef.current.focus();
 
@@ -172,6 +186,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     setShowListMenu(false); checkActiveStates();
   };
 
+  // Tính năng tạo mật khẩu ngẫu nhiên độ bảo mật cao chèn thẳng vào editor
   const handleGenerateStrongPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=';
     let randPass = '';
@@ -179,6 +194,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     if (editorRef.current) { editorRef.current.innerHTML = `<code>${randPass}</code>`; syncEditorContent(); }
   };
 
+  //  Xử lý lưu/xóa/sửa của ghi chú riêng tư
   const handleResetForm = () => {
     setEditingNoteId(null); setFormTitle(''); setFormCategory('Tài khoản'); setFormContent('');
     if (editorRef.current) editorRef.current.innerHTML = '';
@@ -219,6 +235,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     }
   };
 
+  // Sao chép nội dung đã được giải mã (ẩn HTML tags) vào clipboard
   const handleCopy = (htmlContent) => {
     const temp = document.createElement('div');
     temp.innerHTML = htmlContent;
@@ -226,9 +243,11 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     if (showToast) showToast('Đã sao chép nội dung!');
   };
 
+  // Hàm chuyển đổi trạng thái Ẩn/Hiện nội dung của 1 thẻ ghi chú cụ thể
   const toggleVisibility = (id) => {
     setVisibleContentMap((prev) => {
       const isCurrentlyRevealed = prev[id];
+      // Tự động thu gọn nếu đang bật xem thêm mà lại ấn Ẩn
       if (isCurrentlyRevealed && expandedNoteId === id) {
         setExpandedNoteId(null);
       }
@@ -248,6 +267,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     }
   };
 
+  // Lọc dữ liệu hiển thị theo Từ khóa tìm kiếm VÀ Danh mục đang chọn
   const filteredNotes = notes.filter((note) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || (note.title && note.title.toLowerCase().includes(q));
@@ -255,30 +275,18 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
     return matchesSearch && matchesCategory;
   });
 
+  // Nếu người dùng chưa xác thực Vault, hiển thị màn hình Khóa
   if (!isUnlocked) return <PrivateVaultLock onUnlockSuccess={onUnlock} onBackToPublic={onBackToPublic} />;
 
+  // Render nội dung chính khi đã Mở khóa
   return (
     <div className="dashboard-body">
-      <style>{`
-        .card-title { font-size: 14px !important; font-weight: bold !important; text-transform: none !important; margin-bottom: 0 !important; }
-        .rich-editor ul, .card-body ul { padding-left: 20px !important; margin: 6px 0 !important; }
-        .rich-editor ul[data-list="dash"], .card-body ul[data-list="dash"] { list-style-type: "- " !important; }
-        .rich-editor ul:not([data-list="dash"]), .card-body ul:not([data-list="dash"]) { list-style-type: disc !important; }
-        .rich-editor ol, .card-body ol { list-style-type: decimal !important; padding-left: 20px !important; margin: 6px 0 !important; }
-        .rich-editor li, .card-body li { display: list-item !important; margin-bottom: 2px !important; }
-        .rich-editor blockquote, .card-body blockquote { border-left: 4px solid #cbd5e1; padding-left: 10px; color: #64748b; margin: 8px 0; }
-        .rich-editor:empty:before { content: 'Nội dung bí mật của bạn...'; color: #a0aec0; pointer-events: none; }
-        .rich-editor a, .card-body a { color: #2563eb !important; text-decoration: underline !important; cursor: pointer; }
-        .rich-editor code, .card-body code { background-color: #f1f5f9 !important; color: #e11d48 !important; padding: 2px 6px !important; border-radius: 4px !important; font-family: monospace !important; font-size: 0.9em !important; border: 1px solid #e2e8f0 !important; }
-        .note-highlight { box-shadow: 0 0 0 3px var(--primary-color), 0 10px 15px -3px color-mix(in srgb, var(--primary-color) 30%, transparent) !important; border-color: var(--primary-color) !important; transition: all 0.3s ease-in-out; }
-        .format-btn-active { background-color: #e2e8f0 !important; border-color: #94a3b8 !important; font-weight: bold; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); }
-        
-        .card-body::-webkit-scrollbar { width: 5px; height: 5px; }
-        .card-body::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 4px; opacity: 0.8; }
-        .card-body::-webkit-scrollbar-track { background: transparent; }
-      `}</style>
-
+      {/* 
+        Khu vực nội dung chính
+      */}
       <main className="main-content" style={{ width: '100%', minWidth: 0 }}>
+        
+        {/* Thanh thông báo trạng thái bảo mật */}
         <div style={{ background: 'var(--bg-surface)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{ width: '42px', height: '42px', backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -289,17 +297,20 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
               <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>Dữ liệu được bảo mật chuẩn mức cao nhất. Không ai có thể đọc được nội dung của bạn.</p>
             </div>
           </div>
+          {/* Nút Khóa lại thủ công */}
           <button onClick={onLock} style={{ backgroundColor: 'var(--text-main)', color: 'var(--bg-main)', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center' }}>
             <Lock size={14} style={{ marginRight: '6px' }} /> Khóa lại ngay
           </button>
         </div>
 
+        {/* Editor soạn thảo bí mật */}
         <section className="card-panel" style={{ borderTop: '4px solid #e11d48' }}>
           <div className="editor-top">
             <div className="editor-title-group">
               <Edit3 size={18} color="#e11d48" />
               <h3 style={{ color: 'var(--text-main)' }}>{editingNoteId ? 'Chỉnh sửa bí mật' : 'Thêm bí mật mới'}</h3>
             </div>
+            {/* Chọn Phân loại bí mật */}
             <div className="topic-select-wrapper">
               <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-light)', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '13px', outline: 'none' }}>
                 <option value="Tài khoản"> Tài khoản / Mật khẩu</option>
@@ -312,6 +323,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
           <div ref={editorRef} className="input-note-content rich-editor" contentEditable spellCheck={false} onInput={syncEditorContent} onKeyDown={handleEditorKeyDown} onKeyUp={() => syncEditorContent()} onMouseUp={checkActiveStates} onFocus={() => setExpandedNoteId(null)} onClick={(e) => { checkActiveStates(); if (e.target.tagName === 'A' && (e.ctrlKey || e.metaKey)) window.open(e.target.href, '_blank', 'noopener,noreferrer'); }} onBlur={syncEditorContent} style={{ minHeight: '120px', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', outline: 'none', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)', overflowY: 'auto', overflowX: 'auto' }}></div>
           <div className="editor-bottom">
             <div className="toolbar-btns" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {/* ... (Các nút định dạng: Bold, Italic, List, Code) */}
               <button type="button" title="In đậm" className={isBoldActive ? 'format-btn-active' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('bold')}><Bold size={14} /></button>
               <button type="button" title="In nghiêng" className={isItalicActive ? 'format-btn-active' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('italic')}><Italic size={14} /></button>
               <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -328,6 +340,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
               <button type="button" title="Đoạn mã" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('code')}><Code size={14} /></button>
             </div>
             <div className="action-btns">
+              {/* Tiện ích Tạo mật khẩu mạnh */}
               <button type="button" onClick={handleGenerateStrongPassword} style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
                 <KeyRound size={13} style={{ marginRight: '4px' }} /> Tạo mật khẩu mạnh
               </button>
@@ -337,6 +350,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
           </div>
         </section>
 
+        {/* Danh sách ghi chú đã lưu */}
         <section className="notes-section">
           <div className="section-header">
             <div className="header-left">
@@ -344,7 +358,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
               <span className="filter-badge" style={{ backgroundColor: '#e2e8f0', color: '#334155' }}>{filteredNotes.length} mục</span>
             </div>
             
-            {/* THANH LỌC DANH MỤC ĐÃ ĐƯỢC BỔ SUNG LẠI */}
+            {/* Thanh lọc danh mục (Tất cả, Tài khoản, Tài chính, Bảo mật) */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[
                 { name: 'Tất cả', icon: <Layers size={13} style={{ marginRight: '4px' }} /> },
@@ -374,6 +388,7 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
             </div>
           </div>
 
+          {/* Grid hiển thị các thẻ ghi chú bảo mật */}
           <div className={`recent-notes-container ${expandedNoteId ? 'expanded-mode' : ''}`}>
             {filteredNotes.length === 0 && <p className="empty-text">Không tìm thấy ghi chú bảo mật nào.</p>}
 
@@ -382,9 +397,10 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
               
               const isExpanded = expandedNoteId === safeId;
               const isHidden = expandedNoteId && expandedNoteId !== safeId;
-              const isRevealed = visibleContentMap[safeId];
+              const isRevealed = visibleContentMap[safeId]; // Kiểm tra xem người dùng đã bấm Hiện cho thẻ này chưa
               const isHighlighted = highlightedNoteId === safeId;
               
+              // Logic thu gọn text tương tự bên Notes.jsx
               const plainText = note.content ? note.content.replace(/<[^>]*>?/gm, '') : '';
               const lineBreaks = (note.content && note.content.match(/<div|<br|<li|<p/gi)) ? note.content.match(/<div|<br|<li|<p/gi).length : 0;
               const isLong = plainText.length > 140 || lineBreaks >= 3 || (note.content && note.content.length > 300);
@@ -397,13 +413,17 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
                   onMouseEnter={() => { if (isHighlighted) setHighlightedNoteId(null); }}
                 >
                   <div>
+                    {/* Header Thẻ */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <span className="note-tag" style={{ backgroundColor: '#ffe4e6', color: '#e11d48' }}>{note.category}</span>
                       <small style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'flex', alignItems: 'center' }}>
                         <ShieldAlert size={12} style={{ marginRight: '3px' }} /> Bảo mật cấp cao
                       </small>
                     </div>
+                    
                     <h4 className="card-title" style={{ color: 'var(--text-main)' }}>{note.title}</h4>
+                    
+                    {/* Nội dung Thẻ (Xử lý Ẩn/Hiện) */}
                     <div style={{ position: 'relative' }}>
                       <div className="card-body" style={{ 
                         maxHeight: !isExpanded ? '110px' : '1500px',
@@ -411,16 +431,20 @@ function PrivateNotes({ isUnlocked, onUnlock, onLock, onBackToPublic, searchQuer
                         position: 'relative',
                         transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)', 
                       }}>
+                        {/* Nếu isRevealed == true thì hiện nội dung thật, ngược lại hiển thị các dấu •••• */}
                         {isRevealed ? <div dangerouslySetInnerHTML={{ __html: note.content }} /> : <span style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>••••••••••••••••</span>}
                       </div>
                       {!isExpanded && isLong && isRevealed && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35px', background: 'linear-gradient(transparent, var(--bg-surface))', pointerEvents: 'none' }} />}
                     </div>
+
                     {isLong && isRevealed && (
                       <button type="button" onClick={() => toggleExpand(safeId)} style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', marginTop: '6px', padding: 0, display: 'flex', alignItems: 'center' }}>
                         {isExpanded ? <><ChevronUp size={14} style={{ marginRight: '2px' }} /> Thu gọn</> : <><ChevronDown size={14} style={{ marginRight: '2px' }} /> Xem thêm</>}
                       </button>
                     )}
                   </div>
+                  
+                  {/* Các nút tương tác (FOOTER) */}
                   <div className="card-footer" style={{ marginTop: '12px' }}>
                     <button className="btn-link" onClick={() => toggleVisibility(safeId)} style={{ color: 'var(--text-main)', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
                       {isRevealed ? <><EyeOff size={13} style={{ marginRight: '4px' }} /> Ẩn</> : <><Eye size={13} style={{ marginRight: '4px' }} /> Hiện</>}

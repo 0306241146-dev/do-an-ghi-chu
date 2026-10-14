@@ -1,6 +1,4 @@
-/* =========================================================
-   1. ĐỊNH NGHĨA BIẾN MÀU & THIẾT LẬP CƠ BẢN
-   ========================================================= */
+/* Định nghĩa biến màu và thiết lập màu cơ bản */
 :root {
   --bg-main: #f8fafc;
   --bg-surface: #ffffff;
@@ -19,6 +17,7 @@
   --transition: all 0.2s ease-in-out;
 }
 
+/* Biến màu cho Dark Mode (Kích hoạt từ AppContext.jsx và Settings.jsx) */
 [data-theme='dark'] {
   --bg-main: #0f172a;
   --bg-surface: #1e293b;

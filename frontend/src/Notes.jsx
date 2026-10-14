@@ -4,30 +4,39 @@ import { Folder, Trash2, Edit3, RotateCcw, Plus, PenLine, Bold, Italic, List, Li
 const API_BASE = 'http://localhost:5000/api';
 
 function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selectedTopicToJump }) {
+  //  STATE QUẢN LÝ CHỦ ĐỀ (TOPICS) 
   const [topics, setTopics] = useState(['Học tập', 'Công việc', 'Bài tập']);
   const [topic, setTopic] = useState(() => localStorage.getItem('selectedTopic') || 'Học tập');
   const [newTopicInput, setNewTopicInput] = useState('');
+  
+  //  STATE QUẢN LÝ GHI CHÚ (NOTES) 
   const [notes, setNotes] = useState([]);
-  const [formData, setFormData] = useState({ id: null, title: '', content: '' });
-  const [highlightedNoteId, setHighlightedNoteId] = useState(null);
+  const [formData, setFormData] = useState({ id: null, title: '', content: '' }); // Dữ liệu đang soạn thảo
+  const [highlightedNoteId, setHighlightedNoteId] = useState(null); // ID ghi chú được highlight khi tìm kiếm
 
+  //  STATE QUẢN LÝ THÙNG RÁC 
   const [showTrash, setShowTrash] = useState(false);
   const [trash, setTrash] = useState(() => JSON.parse(localStorage.getItem('noteVaultTrash') || '[]'));
 
+  //  STATE QUẢN LÝ TRÌNH SOẠN THẢO (EDITOR) 
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [showListMenu, setShowListMenu] = useState(false);
   
-  const [expandedNoteId, setExpandedNoteId] = useState(null);
+  //  STATE GIAO DIỆN (UI) 
+  const [expandedNoteId, setExpandedNoteId] = useState(null); // ID ghi chú đang được mở rộng (xem thêm)
 
-  const editorRef = useRef(null);
+  const editorRef = useRef(null); // Tham chiếu đến thẻ div contentEditable
 
+  // Lưu thùng rác vào localStorage mỗi khi có thay đổi
   useEffect(() => {
     localStorage.setItem('noteVaultTrash', JSON.stringify(trash));
   }, [trash]);
 
+  // Hàm tiện ích lấy tên chủ đề (tránh lỗi object)
   const getTopicName = (t) => (t && typeof t === 'object' ? t.name || t.id : t) || '';
 
+  // Kiểm tra trạng thái format (in đậm, in nghiêng) tại vị trí con trỏ chuột
   const checkActiveStates = () => {
     try {
       setIsBoldActive(document.queryCommandState('bold'));
@@ -35,11 +44,13 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     } catch (e) {}
   };
 
+  //  Các hàm xử lý chủ đề
   const changeTopic = (newTopic) => {
     const currentName = getTopicName(topic);
     const targetName = getTopicName(newTopic);
     if (currentName === targetName) return;
 
+    // Cảnh báo nếu đang soạn thảo dở dang
     const hasUnsavedTitle = formData.title.trim().length > 0;
     const hasUnsavedContent = editorRef.current && editorRef.current.innerText.trim().length > 0;
     if (hasUnsavedTitle || hasUnsavedContent) {
@@ -52,6 +63,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     localStorage.setItem('selectedTopic', targetName);
   };
 
+  // Hiệu ứng nhảy đến ghi chú/chủ đề khi click từ thanh tìm kiếm
   useEffect(() => {
     if (selectedTopicToJump && selectedTopicToJump.topic) {
       changeTopic(selectedTopicToJump.topic);
@@ -59,6 +71,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }
   }, [selectedTopicToJump]);
 
+  // Scroll màn hình tới ghi chú đang được highlight
   useEffect(() => {
     if (highlightedNoteId) {
       const timer = setTimeout(() => {
@@ -69,6 +82,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }
   }, [notes, highlightedNoteId]);
 
+  //  Kết nối Api để tải danh sách chủ đề và ghi chú từ server
   const fetchTopics = () => {
     fetch(`${API_BASE}/topics`).then((res) => res.json()).then((data) => {
       if (Array.isArray(data) && data.length > 0) {
@@ -87,9 +101,13 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }).catch(() => {});
   };
 
+  // Tải danh sách chủ đề lần đầu
   useEffect(() => { fetchTopics(); }, []);
+  
+  // Tải lại ghi chú và reset form mỗi khi đổi chủ đề
   useEffect(() => { fetchNotes(); handleResetForm(); }, [topic]);
 
+  //  Xử lý Editer và form data
   const handleEditNote = (note) => {
     setFormData(note);
     if (editorRef.current) editorRef.current.innerHTML = note.content || '';
@@ -102,6 +120,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     setIsBoldActive(false); setIsItalicActive(false); setShowListMenu(false);
   };
 
+  // Đồng bộ nội dung từ contentEditable sang state
   const syncEditorContent = () => {
     if (editorRef.current) {
       if (!editorRef.current.innerText.trim() && editorRef.current.innerHTML !== '') {
@@ -112,6 +131,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     checkActiveStates();
   };
 
+  // Xử lý phím tắt đặc biệt (ví dụ xóa thẻ link)
   const handleEditorKeyDown = (e) => {
     if (e.key === 'Backspace') {
       const sel = window.getSelection();
@@ -124,6 +144,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }
   };
 
+  // Các hàm định dạng văn bản (In đậm, In nghiêng, Chèn Link, Code)
   const applyFormat = (command) => {
     if (!editorRef.current) return;
     if (document.activeElement !== editorRef.current) editorRef.current.focus();
@@ -165,6 +186,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
         break;
       }
       case 'code': {
+        // ... (Logic chèn thẻ <code>)
         if (!selection || selection.rangeCount === 0) return;
         const range = selection.getRangeAt(0);
         const containerNode = range.commonAncestorContainer;
@@ -186,9 +208,11 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     checkActiveStates(); syncEditorContent();
   };
 
+  // Định dạng danh sách (Bullet, Number, Dash)
   const applyListFormat = (type) => {
     if (!editorRef.current) return;
     if (document.activeElement !== editorRef.current) editorRef.current.focus();
+
     if (!editorRef.current.innerText.trim() && (editorRef.current.innerHTML === '' || editorRef.current.innerHTML === '<br>')) {
       editorRef.current.innerHTML = '<div><br></div>';
       const range = document.createRange();
@@ -209,6 +233,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
         }
       }
     }
+
     if (type === 'number') document.execCommand('insertOrderedList', false, null);
     else document.execCommand('insertUnorderedList', false, null);
 
@@ -225,6 +250,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     setShowListMenu(false); checkActiveStates();
   };
 
+  // Đóng/mở rộng chiều cao thẻ ghi chú nếu nội dung quá dài
   const toggleExpand = (id) => {
     if (expandedNoteId === id) {
       setExpandedNoteId(null);
@@ -237,6 +263,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }
   };
 
+  //  CÁC HÀM LƯU / XÓA DỮ LIỆU 
   const handleAddTopic = () => {
     const trimmed = newTopicInput.trim();
     if (!trimmed) return alert('Vui lòng nhập tên chủ đề!');
@@ -321,6 +348,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
     }
   };
 
+  // Lọc ghi chú dựa trên từ khóa tìm kiếm (truyền từ App.jsx)
   const filteredNotes = notes.filter((note) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -331,29 +359,13 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
 
   return (
     <div className="dashboard-body">
-      <style>{`
-        .card-title { font-size: 14px !important; font-weight: bold !important; text-transform: none !important; margin-bottom: 0 !important; }
-        .rich-editor ul, .card-body ul { padding-left: 20px !important; margin: 6px 0 !important; }
-        .rich-editor ul[data-list="dash"], .card-body ul[data-list="dash"] { list-style-type: "- " !important; }
-        .rich-editor ul:not([data-list="dash"]), .card-body ul:not([data-list="dash"]) { list-style-type: disc !important; }
-        .rich-editor ol, .card-body ol { list-style-type: decimal !important; padding-left: 20px !important; margin: 6px 0 !important; }
-        .rich-editor li, .card-body li { display: list-item !important; margin-bottom: 2px !important; }
-        .rich-editor blockquote, .card-body blockquote { border-left: 4px solid #cbd5e1; padding-left: 10px; color: #64748b; margin: 8px 0; }
-        .rich-editor:empty:before { content: 'Nội dung ghi chú của bạn...'; color: #a0aec0; pointer-events: none; }
-        .rich-editor a, .card-body a { color: #2563eb !important; text-decoration: underline !important; cursor: pointer; }
-        .rich-editor code, .card-body code { background-color: #f1f5f9 !important; color: #e11d48 !important; padding: 2px 6px !important; border-radius: 4px !important; font-family: monospace !important; font-size: 0.9em !important; border: 1px solid #e2e8f0 !important; }
-        .note-highlight { box-shadow: 0 0 0 3px var(--primary-color), 0 10px 15px -3px color-mix(in srgb, var(--primary-color) 30%, transparent) !important; border-color: var(--primary-color) !important; transition: all 0.3s ease-in-out; }
-        .format-btn-active { background-color: #e2e8f0 !important; border-color: #94a3b8 !important; font-weight: bold; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); }
-        .card-body::-webkit-scrollbar { width: 5px; height: 5px; }
-        .card-body::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 4px; opacity: 0.8; }
-        .card-body::-webkit-scrollbar-track { background: transparent; }
-      `}</style>
-
+      {/* 
+         Phần bên trái (Sidebar) - Danh sách chủ đề và nút thêm chủ đề
+      */}
       <aside className="sidebar">
         <div className="sidebar-header">CHỦ ĐỀ & PHÂN LOẠI</div>
         <div className="add-topic-inline">
           <input placeholder="Tên chủ đề mới..." value={newTopicInput} onChange={(e) => setNewTopicInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()} />
-          {/* SỬ DỤNG ICON PLUS Ở ĐÂY */}
           <button onClick={handleAddTopic} style={{ backgroundColor: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Plus size={18} />
           </button>
@@ -364,7 +376,6 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
             const isActive = activeTopicName === tName;
             return (
               <li key={tName} className={`topic-item ${isActive ? 'active' : ''}`} onClick={() => changeTopic(t)}>
-                {/* SỬ DỤNG ICON FOLDER Ở ĐÂY */}
                 <Folder size={16} style={{ marginRight: '8px' }} /> {tName}
               </li>
             );
@@ -372,19 +383,27 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
         </ul>
       </aside>
 
+      {/* 
+         Phần bên phải nội dung chính
+      */}
       <main className="main-content">
+        
+        {/* Khu vực soạn thảo (Ẩn đi nếu đang xem Thùng rác) */}
         {!showTrash && (
           <section className="card-panel">
             <div className="editor-top">
               <div className="editor-title-group">
-                {/* SỬ DỤNG ICON PENTOOL Ở ĐÂY */}
                 <PenLine size={20} color={primaryColor} /> 
                 <h3 style={{ color: 'var(--text-main)' }}>{formData.id ? 'Sửa ghi chú' : 'Thêm ghi chú mới'}</h3>
               </div>
               <div className="topic-select-wrapper"><label>Chủ đề hiện tại: <strong>{activeTopicName}</strong></label></div>
             </div>
             <input className="input-note-title" placeholder="Tiêu đề ghi chú..." value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} onFocus={() => setExpandedNoteId(null)} spellCheck={false} />
+            
+            {/* Vùng ContentEditable - Editor rich text custom */}
             <div ref={editorRef} className="input-note-content rich-editor" contentEditable spellCheck={false} onInput={syncEditorContent} onKeyDown={handleEditorKeyDown} onKeyUp={() => syncEditorContent()} onMouseUp={checkActiveStates} onFocus={() => setExpandedNoteId(null)} onClick={(e) => { checkActiveStates(); if (e.target.tagName === 'A' && (e.ctrlKey || e.metaKey)) window.open(e.target.href, '_blank', 'noopener,noreferrer'); }} onBlur={syncEditorContent} style={{ minHeight: '120px', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', outline: 'none', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)', overflowY: 'auto', overflowX: 'auto' }}></div>
+            
+            {/* Thanh công cụ định dạng (Toolbar) */}
             <div className="editor-bottom">
               <div className="toolbar-btns" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                 <button type="button" title="In đậm" className={isBoldActive ? 'format-btn-active' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('bold')}><Bold size={14} /></button>
@@ -393,6 +412,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
                   <button type="button" title="Kiểu đầu dòng" onMouseDown={(e) => e.preventDefault()} onClick={() => setShowListMenu(!showListMenu)}><List size={14} /></button>
                   {showListMenu && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', gap: '4px', padding: '4px', zIndex: 100 }}>
+                      {/* ... Menu chọn kiểu danh sách */}
                       <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyListFormat('dash')} style={{ padding: '4px 8px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
                       <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyListFormat('bullet')} style={{ padding: '4px 8px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold' }}>•</button>
                       <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyListFormat('number')} style={{ padding: '4px 8px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold' }}>1.</button>
@@ -410,6 +430,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
           </section>
         )}
 
+        {/* Khu vực danh sách ghi chú / Thùng rác */}
         <section className="notes-section">
           <div className="section-header">
             <div className="header-left">
@@ -420,6 +441,8 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
                 {showTrash ? `${trash.length} mục đã xóa` : (searchQuery ? `Tìm trong "${activeTopicName}"` : `Chủ đề: ${activeTopicName}`)}
               </span>
             </div>
+            
+            {/* Thanh lọc danh mục đã được bổ sung lại */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button className="btn-secondary" onClick={() => { setShowTrash(!showTrash); setExpandedNoteId(null); }} style={{ fontSize: '13px', borderColor: showTrash ? primaryColor : 'var(--border-light)', color: showTrash ? primaryColor : 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
                 {showTrash ? <><RotateCcw size={14} style={{ marginRight: '6px' }} /> Quay lại ghi chú</> : <><RotateCcwClock size={14} style={{ marginRight: '6px' }} /> Lịch sử đã xóa</>}
@@ -432,6 +455,7 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
 
           <div className={`recent-notes-container ${expandedNoteId && !showTrash ? 'expanded-mode' : ''}`}>
             {showTrash ? (
+              // Hiển thị danh sách xem rác
               trash.length === 0 ? <p className="empty-text">Thùng rác đang trống.</p> : trash.map((note) => (
                 <div key={note.id} className="modern-note-card" style={{ border: '1px dashed #ef4444' }}>
                   <div>
@@ -450,16 +474,19 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
                 </div>
               ))
             ) : (
+              // Hiển thị danh sách ghi chú bình thường
               filteredNotes.length === 0 ? (
                 <p className="empty-text">{searchQuery ? `Không tìm thấy ghi chú nào.` : `Chưa có ghi chú nào.`}</p>
               ) : (
                 filteredNotes.map((note, index) => {
                   const safeId = note.id || `fallback-id-${index}`;
                   
+                  // Tính toán trạng thái hiển thị của từng Note Card
                   const isExpanded = expandedNoteId === safeId;
                   const isHidden = expandedNoteId && expandedNoteId !== safeId;
                   const isHighlighted = highlightedNoteId === safeId;
                   
+                  // Logic cắt chữ/thu gọn nếu nội dung quá dài (Hơn 140 ký tự hoặc 3 dòng)
                   const plainText = note.content ? note.content.replace(/<[^>]*>?/gm, '') : '';
                   const lineBreaks = (note.content && note.content.match(/<div|<br|<li|<p/gi)) ? note.content.match(/<div|<br|<li|<p/gi).length : 0;
                   const isLong = plainText.length > 140 || lineBreaks >= 3 || (note.content && note.content.length > 300);
@@ -481,8 +508,10 @@ function Notes({ primaryColor = '#6366f1', showToast, searchQuery = '', selected
                             position: 'relative',
                             transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)', 
                           }} dangerouslySetInnerHTML={{ __html: note.content }} />
+                          {/* Lớp gradient mờ ảo dưới cùng nếu Note bị thu gọn */}
                           {!isExpanded && isLong && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35px', background: 'linear-gradient(transparent, var(--bg-surface))', pointerEvents: 'none' }} />}
                         </div>
+                        {/* Nút Xem Thêm / Thu Gọn */}
                         {isLong && (
                           <button type="button" onClick={() => toggleExpand(safeId)} style={{ background: 'none', border: 'none', color: primaryColor, cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', marginTop: '6px', padding: 0, display: 'flex', alignItems: 'center' }}>
                             {isExpanded ? <><ChevronUp size={14} style={{ marginRight: '2px' }} /> Thu gọn</> : <><ChevronDown size={14} style={{ marginRight: '2px' }} /> Xem thêm</>}

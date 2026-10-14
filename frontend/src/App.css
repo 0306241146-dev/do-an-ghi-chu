@@ -1,6 +1,4 @@
-/* =========================================================
-   1. KHUNG TỔNG THỂ & NAVBAR TRÊN CÙNG
-   ========================================================= */
+/*  App.jsx (Layout chính & Header Navbar) */
 html, body, #root {
   width: 100%;
   height: 100%;
@@ -18,6 +16,7 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+/* Thanh Navbar */
 .top-navbar {
   display: flex;
   justify-content: space-between;
@@ -71,6 +70,7 @@ html, body, #root {
   font-size: 11px;
 }
 
+/* Tabs chuyển trang */
 .nav-tabs {
   display: flex;
   gap: 4px;
@@ -112,6 +112,7 @@ html, body, #root {
   margin-left: 4px;
 }
 
+/* Ô tìm kiếm và User */
 .nav-right {
   display: flex;
   align-items: center;
@@ -176,9 +177,58 @@ html, body, #root {
   white-space: nowrap;
 }
 
-/* =========================================================
-   2. BỐ CỤC CHUNG & SIDEBAR (ĐÃ CHỈNH MÀU ĐỘNG)
-   ========================================================= */
+/* Menu Dropdown kết quả tìm kiếm */
+.search-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  max-height: 350px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 8px;
+}
+
+.search-result-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-result-item:hover {
+  background-color: var(--bg-main);
+}
+
+.badge-private {
+  font-size: 10px;
+  font-weight: bold;
+  background-color: #ffe4e6;
+  color: #e11d48;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-public {
+  font-size: 10px;
+  font-weight: bold;
+  background-color: #e0e7ff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Khung bọc content chính cho các trang */
 .dashboard-body-wrap {
   flex: 1;
   display: flex;
@@ -198,6 +248,7 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+/* DÀNH CHO: Notes.jsx (Ghi chú công khai - Sidebar) */
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -278,6 +329,7 @@ html, body, #root {
   background-color: color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
+/* Notes.jsx & PrivateNotes.jsx (Editor soạn thảo) */
 .main-content {
   flex: 1;
   display: flex;
@@ -286,7 +338,7 @@ html, body, #root {
   min-width: 0;
 }
 
-/* KHUNG SOẠN THẢO GHI CHÚ */
+/* khung soạn thảo ghi chú */
 .card-panel {
   background-color: var(--bg-surface);
   border-radius: var(--radius-lg);
@@ -412,9 +464,90 @@ html, body, #root {
   cursor: pointer;
 }
 
-/* =========================================================
-   THIẾT LẬP LƯỚI GHI CHÚ 3 CỘT VÀ HIỆU ỨNG MƯỢT MÀ
-   ========================================================= */
+/* Notes.jsx & PrivateNotes.jsx (Rich Editor Styles)
+   (Đã bóc tách từ thẻ <style> nội tuyến) */
+.card-title {
+  font-size: 14px !important;
+  font-weight: bold !important;
+  text-transform: none !important;
+  margin-bottom: 0 !important;
+}
+
+.rich-editor ul, 
+.card-body ul {
+  padding-left: 20px !important;
+  margin: 6px 0 !important;
+}
+
+.rich-editor ul[data-list="dash"], 
+.card-body ul[data-list="dash"] {
+  list-style-type: "- " !important;
+}
+
+.rich-editor ul:not([data-list="dash"]), 
+.card-body ul:not([data-list="dash"]) {
+  list-style-type: disc !important;
+}
+
+.rich-editor ol, 
+.card-body ol {
+  list-style-type: decimal !important;
+  padding-left: 20px !important;
+  margin: 6px 0 !important;
+}
+
+.rich-editor li, 
+.card-body li {
+  display: list-item !important;
+  margin-bottom: 2px !important;
+}
+
+.rich-editor blockquote, 
+.card-body blockquote {
+  border-left: 4px solid #cbd5e1;
+  padding-left: 10px;
+  color: #64748b;
+  margin: 8px 0;
+}
+
+.rich-editor:empty:before {
+  content: 'Nội dung ghi chú của bạn...';
+  color: #a0aec0;
+  pointer-events: none;
+}
+
+.rich-editor a, 
+.card-body a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  cursor: pointer;
+}
+
+.rich-editor code, 
+.card-body code {
+  background-color: #f1f5f9 !important;
+  color: #e11d48 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-family: monospace !important;
+  font-size: 0.9em !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.note-highlight {
+  box-shadow: 0 0 0 3px var(--primary-color), 0 10px 15px -3px color-mix(in srgb, var(--primary-color) 30%, transparent) !important;
+  border-color: var(--primary-color) !important;
+  transition: all 0.3s ease-in-out;
+}
+
+.format-btn-active {
+  background-color: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  font-weight: bold;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+/* Notes.jsx & PrivateNotes.jsx (Grid Cards) */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -454,21 +587,21 @@ html, body, #root {
   font-size: 13px;
 }
 
-/* KHUNG CHỨA NOTE 3 CỘT */
+/* khung chứa 3 cột note */
 .recent-notes-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   width: 100%;
   align-items: stretch;
-  transition: gap 0.4s ease; /* Chuyển động gap mượt mà không giật khấc */
+  transition: gap 0.4s ease;
 }
 
 .recent-notes-container.expanded-mode {
-  gap: 0px; 
+  gap: 0px;
 }
 
-/* THẺ GHI CHÚ BÌNH THƯỜNG */
+/* Thẻ ghi chú bình thường */
 .modern-note-card {
   flex: 0 0 calc((100% - 40px) / 3);
   width: calc((100% - 40px) / 3);
@@ -488,7 +621,7 @@ html, body, #root {
   
   box-sizing: border-box;
   overflow: hidden;
-  min-height: 240px; 
+  min-height: 240px;
 }
 
 .modern-note-card:hover {
@@ -496,18 +629,19 @@ html, body, #root {
   box-shadow: var(--shadow-md);
 }
 
-/* LÚC PHÓNG TO NOTE (XEM THÊM) */
+/* Phóng to note (click xem thêm) */
 .modern-note-card.expanded-card {
   flex: 0 0 100%;
   width: 100%;
   cursor: default;
-  min-height: auto; 
-}
-.modern-note-card.expanded-card:hover {
-  transform: none; /* Khóa hiệu ứng nảy lên khi đang mở to */
+  min-height: auto;
 }
 
-/* LÚC THU NHỎ & ẨN CÁC NOTE KHÁC */
+.modern-note-card.expanded-card:hover {
+  transform: none;
+}
+
+/* Lúc thu nhỏ và ẩn các note khác */
 .modern-note-card.hidden-card {
   flex: 0 0 0px;
   width: 0px;
@@ -538,7 +672,7 @@ html, body, #root {
 }
 
 .card-body {
-  flex: 1; 
+  flex: 1;
   overflow: auto;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -546,6 +680,21 @@ html, body, #root {
   color: var(--text-muted);
   margin-top: 8px;
   transition: max-height 0.4s ease;
+}
+
+.card-body::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.card-body::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.card-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .card-footer {
@@ -581,9 +730,7 @@ html, body, #root {
   padding: 30px 0;
 }
 
-/* =========================================================
-   3. GIAO DIỆN KHÓA VÙNG RIÊNG TƯ (VAULT LOCK SCREEN)
-   ========================================================= */
+/* PrivateVaultLock.jsx (Màn hình Mật khẩu) */
 .vault-lock-screen {
   max-width: 580px;
   margin: 30px auto;
@@ -749,7 +896,7 @@ html, body, #root {
   transform: translateY(-1px);
 }
 
-/* TOAST THÔNG BÁO */
+/* App.jsx (Thông báo Toast) */
 .toast-notification {
   position: fixed;
   bottom: 20px;
@@ -763,9 +910,7 @@ html, body, #root {
   z-index: 1000;
 }
 
-/* =========================================================
-   5. RESPONSIVE (Dành cho Điện thoại và Thu nhỏ màn hình F12)
-   ========================================================= */
+/* Toàn bộ (Responsive Mobile/Tablet) */
 @media (max-width: 1024px) {
   .modern-note-card {
     flex: 0 0 calc((100% - 20px) / 2);
@@ -782,19 +927,78 @@ html, body, #root {
     padding: 12px 16px;
     gap: 12px;
   }
-  .nav-left { flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; }
-  .brand-logo { border-right: none; padding-right: 0; }
-  .nav-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding: 6px; }
-  .nav-right { flex-direction: column-reverse; width: 100%; align-items: stretch; gap: 12px; }
-  .search-box { width: 100%; }
-  .user-profile { justify-content: flex-end; }
-  .dashboard-body { flex-direction: column; padding: 16px; gap: 16px; }
-  .sidebar { width: 100%; min-width: 100%; }
-  .topic-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-  .editor-top { flex-direction: column; align-items: flex-start; }
-  .editor-bottom { flex-direction: column; align-items: stretch; gap: 12px; }
-  .action-btns { width: 100%; justify-content: flex-end; }
-  .search-dropdown-menu { width: 100%; max-width: 100%; }
+
+  .nav-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .brand-logo {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 6px;
+  }
+
+  .nav-right {
+    flex-direction: column-reverse;
+    width: 100%;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .user-profile {
+    justify-content: flex-end;
+  }
+
+  .dashboard-body {
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .topic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .editor-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .editor-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .action-btns {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .search-dropdown-menu {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
@@ -802,54 +1006,4 @@ html, body, #root {
     flex: 0 0 100%;
     width: 100%;
   }
-}
-
-.search-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 6px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-  max-height: 350px;
-  overflow-y: auto;
-  z-index: 1000;
-  padding: 8px;
-}
-
-.search-result-item {
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.search-result-item:hover {
-  background-color: var(--bg-main);
-}
-
-.badge-private {
-  font-size: 10px; 
-  font-weight: bold; 
-  background-color: #ffe4e6; 
-  color: #e11d48; 
-  padding: 2px 8px; 
-  border-radius: 10px; 
-  white-space: nowrap; 
-  flex-shrink: 0;
-}
-
-.badge-public {
-  font-size: 10px; 
-  font-weight: bold; 
-  background-color: #e0e7ff; 
-  padding: 2px 8px; 
-  border-radius: 10px; 
-  white-space: nowrap; 
-  flex-shrink: 0;
 }

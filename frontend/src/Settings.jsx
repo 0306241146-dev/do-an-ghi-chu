@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from './AppContext';
 import { Settings as SettingsIcon, User, Palette, Sun, Moon, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
 
+//  Danh sách màu chủ đạo
 const COLOR_PRESETS = [
   { name: 'Tím NoteVault', hex: '#7c3aed' },
   { name: 'Xanh Sapphire', hex: '#2563eb' },
@@ -11,20 +12,25 @@ const COLOR_PRESETS = [
 ];
 
 function Settings({ onUpdate, showToast }) {
+  // Lấy dữ liệu profile hiện tại và hàm cập nhật từ Context toàn cục
   const { profile, updateProfile } = useAppContext();
 
+  //  State quản lý form data của form cài đặt (bao gồm tên hiển thị, email, theme, màu chủ đạo, mật khẩu hiện tại và mật khẩu vùng kín mới)
   const [formData, setFormData] = useState({
     displayName: profile.displayName || profile.name || 'Nguyễn Anh Đạt',
     email: profile.email || 'nguyenanhdat@gmail.com',
     theme: profile.theme || 'Light',
     primaryColor: profile.primaryColor || '#7c3aed',
-    currentPassword: '',
-    privatePassword: '',
+    currentPassword: '', // Mật khẩu cũ (để xác thực khi muốn đổi mật khẩu mới)
+    privatePassword: '', // Mật khẩu vùng kín mới
   });
 
+  // State quản lý việc ẩn/hiện text trong ô nhập mật khẩu
   const [showPassword, setShowPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
+  //  Effect để đồng bộ formData với profile từ Context khi component mount hoặc profile thay đổi
+  // Cập nhật lại form data mỗi khi dữ liệu profile từ Context thay đổi (ví dụ khi fetch API xong)
   useEffect(() => {
     if (profile) {
       setFormData((prev) => ({
@@ -37,7 +43,8 @@ function Settings({ onUpdate, showToast }) {
     }
   }, [profile]); 
 
-  // Chỉ thay đổi giao diện để xem trước, KHÔNG lưu liền (Fix lỗi F5)
+  //  Hàm xem trước giao diện (Theme & Color) mà KHÔNG lưu vào database
+  // Chỉ thay đổi thuộc tính CSS trên HTML để xem trước, chưa lưu vào database
   const handleThemePreview = (newTheme) => {
     setFormData((prev) => ({ ...prev, theme: newTheme }));
     document.documentElement.setAttribute('data-theme', newTheme.toLowerCase());
@@ -48,7 +55,9 @@ function Settings({ onUpdate, showToast }) {
     document.documentElement.style.setProperty('--primary-color', hex);
   };
 
-  // Nếu người dùng rời khỏi trang Cài đặt (unmount) mà chưa bấm lưu, trả lại Theme gốc
+  //  Effect hoàn tác
+  // CỰC KỲ QUAN TRỌNG: Nếu người dùng bấm xem trước màu/theme nhưng KHÔNG bấm lưu,
+  // khi họ chuyển sang tab khác (unmount), đoạn code này sẽ trả lại theme/màu gốc.
   useEffect(() => {
     return () => {
       document.documentElement.setAttribute('data-theme', profile.theme.toLowerCase());
@@ -56,8 +65,10 @@ function Settings({ onUpdate, showToast }) {
     };
   }, [profile.theme, profile.primaryColor]);
 
+  // Kiểm tra xem hiện tại có đang ở chế độ Dark Mode hay không (phục vụ CSS nội tuyến)
   const isDark = formData.theme === 'Dark' || formData.theme === 'dark';
 
+  //  Định dạng Css
   const themeStyles = {
     cardBg: isDark ? '#1e293b' : '#ffffff',
     textColor: isDark ? '#f8fafc' : '#1e293b',
@@ -71,6 +82,8 @@ function Settings({ onUpdate, showToast }) {
     badgeBorder: isDark ? '#047857' : '#a7f3d0',
   };
 
+  //  Tiện ích mật khẩu
+  // Tạo chuỗi ngẫu nhiên dài 16 ký tự làm mật khẩu bảo mật cao
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=';
     let randPass = '';
@@ -80,6 +93,7 @@ function Settings({ onUpdate, showToast }) {
     setFormData((prev) => ({ ...prev, privatePassword: randPass }));
   };
 
+  // Đánh giá độ mạnh của mật khẩu để hiển thị thanh màu bên dưới
   const getPasswordStrength = (pass) => {
     if (!pass) return { label: 'Chưa nhập', color: '#94a3b8', width: '0%' };
     if (pass.length < 6) return { label: 'Yếu', color: '#ef4444', width: '25%' };
@@ -89,6 +103,7 @@ function Settings({ onUpdate, showToast }) {
 
   const strength = getPasswordStrength(formData.privatePassword);
 
+  //  Xử lý lưu cài đặt 
   const handleSave = (e) => {
     if (e) e.preventDefault();
 
@@ -99,6 +114,7 @@ function Settings({ onUpdate, showToast }) {
       primaryColor: formData.primaryColor,
     };
 
+    // Nếu người dùng nhập mật khẩu mới, bắt buộc phải có mật khẩu hiện tại
     if (formData.privatePassword.trim()) {
       if (!formData.currentPassword.trim()) {
         alert('Vui lòng nhập Mật khẩu hiện tại để xác minh trước khi đổi mật khẩu mới!');
@@ -108,6 +124,7 @@ function Settings({ onUpdate, showToast }) {
       payload.privatePassword = formData.privatePassword.trim();
     }
 
+    // Gửi data cập nhật lên Server
     fetch('http://localhost:5000/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -117,9 +134,9 @@ function Settings({ onUpdate, showToast }) {
       .then((data) => {
         if (data && data.success) {
           if (showToast) showToast('Đã lưu cài đặt tài khoản thành công!');
-          updateProfile(data.settings || payload);
-          setFormData((prev) => ({ ...prev, currentPassword: '', privatePassword: '' }));
-          if (onUpdate) onUpdate();
+          updateProfile(data.settings || payload); // Đồng bộ lại Context toàn cục
+          setFormData((prev) => ({ ...prev, currentPassword: '', privatePassword: '' })); // Reset ô mật khẩu sau khi đổi thành công
+          if (onUpdate) onUpdate(); // Trigger lại dữ liệu nếu cần
         } else {
           alert(data.message || 'Không thể lưu cài đặt!');
         }
@@ -130,6 +147,7 @@ function Settings({ onUpdate, showToast }) {
   return (
     <div style={{ maxWidth: '850px', margin: '0 auto', padding: '24px', fontFamily: 'sans-serif', color: themeStyles.textColor, transition: 'all 0.2s ease', width: '100%', boxSizing: 'border-box' }}>
       
+      {/*  TIÊU ĐỀ TRANG CÀI ĐẶT  */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: themeStyles.textColor, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -141,6 +159,7 @@ function Settings({ onUpdate, showToast }) {
         </div>
       </div>
 
+      {/*  Hồ sơ và Tài khoản  */}
       <div style={{ background: themeStyles.cardBg, border: `1px solid ${themeStyles.borderColor}`, borderRadius: '12px', padding: '20px', marginBottom: '20px', transition: 'all 0.2s ease' }}>
         <div style={{ marginBottom: '16px', borderBottom: `1px solid ${themeStyles.dividerColor}`, paddingBottom: '12px' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: themeStyles.textColor, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -171,14 +190,18 @@ function Settings({ onUpdate, showToast }) {
         </div>
       </div>
 
+      {/*  Giao diện & Trực quan  */}
       <div style={{ background: themeStyles.cardBg, border: `1px solid ${themeStyles.borderColor}`, borderRadius: '12px', padding: '20px', marginBottom: '20px', transition: 'all 0.2s ease' }}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: `1px solid ${themeStyles.dividerColor}`, paddingBottom: '12px', color: themeStyles.textColor, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Palette size={18} /> Giao diện & Trực quan
         </h3>
 
+        {/* Lựa chọn Dark/Light Mode */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px', color: themeStyles.textColor }}>Chế độ hiển thị (Theme Mode)</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
+            
+            {/* Box chọn Light Mode */}
             <div
               onClick={() => handleThemePreview('Light')}
               style={{
@@ -198,6 +221,7 @@ function Settings({ onUpdate, showToast }) {
               </div>
             </div>
 
+            {/* Box chọn Dark Mode */}
             <div
               onClick={() => handleThemePreview('Dark')}
               style={{
@@ -219,6 +243,7 @@ function Settings({ onUpdate, showToast }) {
           </div>
         </div>
 
+        {/* Lựa chọn Bảng Màu */}
         <div>
           <label style={{ display: 'block', fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: themeStyles.textColor }}>Màu sắc chủ đạo (Primary Accent)</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
@@ -248,6 +273,7 @@ function Settings({ onUpdate, showToast }) {
               </button>
             ))}
 
+            {/* Chọn màu tùy chỉnh (Color Picker) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', border: `1px solid ${themeStyles.inputBorder}`, backgroundColor: themeStyles.inputBg, padding: '4px 8px', borderRadius: '6px' }}>
               <span style={{ fontSize: '11px', color: themeStyles.subTextColor, fontWeight: 'bold' }}>HEX:</span>
               <input
@@ -261,11 +287,13 @@ function Settings({ onUpdate, showToast }) {
         </div>
       </div>
 
+      {/*  Đổi mật khẩu Vùng riêng tư  */}
       <div style={{ background: themeStyles.cardBg, border: `1px solid ${themeStyles.borderColor}`, borderRadius: '12px', padding: '20px', marginBottom: '24px', transition: 'all 0.2s ease' }}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: `1px solid ${themeStyles.dividerColor}`, paddingBottom: '12px', color: themeStyles.textColor, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Lock size={18} /> Đổi Mật khẩu Vùng riêng tư
         </h3>
 
+        {/* Mật khẩu hiện tại (Yêu cầu nhập nếu muốn đổi password) */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', fontWeight: 'bold', fontSize: '13px', marginBottom: '6px', color: themeStyles.textColor }}>
             Mật khẩu hiện tại *
@@ -288,6 +316,7 @@ function Settings({ onUpdate, showToast }) {
           </div>
         </div>
 
+        {/* Mật khẩu mới */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
             <label style={{ fontWeight: 'bold', fontSize: '13px', color: themeStyles.textColor }}>Mật khẩu vùng riêng tư mới</label>
@@ -313,6 +342,7 @@ function Settings({ onUpdate, showToast }) {
             </button>
           </div>
 
+          {/* Thanh hiển thị độ mạnh của mật khẩu */}
           {formData.privatePassword && (
             <div style={{ marginTop: '8px' }}>
               <div style={{ height: '4px', width: '100%', backgroundColor: themeStyles.dividerColor, borderRadius: '2px', overflow: 'hidden' }}>
@@ -327,6 +357,7 @@ function Settings({ onUpdate, showToast }) {
         </div>
       </div>
 
+      {/*  Button lưu thay đổi  */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         <button
           type="button"
